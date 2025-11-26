@@ -6,109 +6,134 @@
     <title>ระบบออกบิลเงินสด</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Niramit:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <style>
         :root { --a5-width: 148mm; --a5-height: 210mm; }
-        body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 20px; background-color: #525659; display: flex; flex-direction: column; align-items: center; font-size: 12px; }
-
-        .search-bar {
-            width: var(--a5-width);
-            background: #fff;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .search-bar input { border: 1px solid #ccc; padding: 5px; border-radius: 4px; font-family: 'Sarabun'; width: 100%; }
-
-        .controls {
-            width: var(--a5-width);
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
         
-        .control-group-left { display: flex; align-items: center; gap: 10px; }
-        .control-group-right { display: flex; align-items: center; gap: 10px; }
+        body { font-family: 'Niramit', sans-serif; margin: 0; padding: 20px; background-color: #525659; display: flex; flex-direction: column; align-items: center; font-size: 11px; }
 
-        /* ปุ่มทั่วไป */
-        button, select { 
-            padding: 8px 15px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-family: 'Sarabun'; 
-            font-size: 14px; 
-            height: 38px; /* ความสูงมาตรฐาน */
-            box-sizing: border-box; 
+        /* --- Animation Spinner --- */
+        .spinner {
+            display: inline-block; width: 12px; height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite; margin-right: 5px; vertical-align: middle;
         }
+        .spinner-dark { border: 2px solid rgba(0, 0, 0, 0.1); border-top-color: #333; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- UI Controls --- */
+        .search-bar, .controls {
+            width: var(--a5-width); background: #fff; padding: 10px; margin-bottom: 10px;
+            border-radius: 8px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .search-bar { gap: 10px; }
+        .controls { justify-content: space-between; margin-bottom: 15px; }
+        .search-bar input { border: 1px solid #ccc !important; padding: 5px !important; border-radius: 4px; font-family: 'Niramit'; width: 100%; height: 38px !important; font-size: 14px !important; }
+        
+        /* [REFINEMENT] Added transitions for a smoother UI experience */
+        button, select { 
+            padding: 8px 15px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; 
+            font-family: 'Niramit'; font-size: 14px; height: 38px; box-sizing: border-box;
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        button:hover, select:hover { border-color: #888; }
+        
+        .control-group-left, .control-group-right { display: flex; align-items: center; gap: 10px; }
         
         #btn-save-export { background-color: #007bff; color: white; border: none; font-weight: bold; }
         #btn-save-export:hover { background-color: #0056b3; }
-        
-        #btn-search { background-color: #6c757d; color: white; border: none; width: 80px;}
+
+        #btn-search { background-color: #6c757d; color: white; border: none; min-width: 80px; display: inline-flex; align-items: center; justify-content: center; }
         #btn-search:hover { background-color: #5a6268; }
 
-        /* --- แก้ไขปุ่มลบบิล (Final Fix) --- */
-        #btn-delete { 
-            background-color: #dc3545; 
-            color: white; 
-            border: none; 
-            height: 38px;        /* สูงเท่าปุ่มค้นหาเป๊ะ */
-            padding: 0 20px;     /* เพิ่มพื้นที่ด้านข้าง */
-            white-space: nowrap; /* ห้ามตัดบรรทัดเด็ดขาด */
-            width: auto;         /* ความกว้างยืดหยุ่นตามตัวอักษร */
-            margin-left: 5px; 
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
+        #btn-delete { background-color: #dc3545; color: white; border: none; width: auto; min-width: 100px; padding: 0 20px; white-space: nowrap; }
         #btn-delete:hover { background-color: #c82333; }
 
-        #btn-clear { background-color: #ffc107; color: #212529; border: none; font-weight: bold; }
+        #btn-clear { background-color: #ffc107; color: #212529; border: none; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; }
         #btn-clear:hover { background-color: #e0a800; }
+
+        /* --- BILL LAYOUT --- */
+        .bill-container { 
+            width: var(--a5-width); height: var(--a5-height); padding: 6mm; 
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); background-color: #fff; 
+            box-sizing: border-box; display: flex; flex-direction: column; position: relative; 
+        }
         
-        /* Bill Styles */
-        .bill-container { width: var(--a5-width); height: var(--a5-height); padding: 10mm; box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); background-color: #fff; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
-        .bill-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; }
-        .company-stamp-area { border: 1px solid #000; width: 70mm; height: 30mm; box-sizing: border-box; padding: 5px; font-size: 10px; line-height: 1.4; display: flex; flex-direction: column; justify-content: center; }
-        #company-name { font-weight: bold; font-size: 11px; }
+        .bill-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 2px; }
+        .company-stamp-area { border: 0.5px solid #000; width: 70mm; height: 30mm; box-sizing: border-box; padding: 5px; font-size: 10px; line-height: 1.4; display: flex; flex-direction: column; justify-content: center; }
+        #company-name { font-weight: bold; font-size: 11px; } 
+
         .bill-title-section { text-align: right; width: 45%; }
         .bill-title-section h2 { margin: 0; font-size: 22px; font-weight: bold; }
-        .bill-info { margin-top: 5px; display: flex; justify-content: flex-end; align-items: center; gap: 5px;}
-        .customer-grid { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; align-items: center; margin-bottom: 10px; }
+        
+        .bill-info { margin-top: 5px; display: flex; justify-content: flex-end; align-items: center; gap: 5px; }
+        .bill-info label { width: 80px; text-align: right; font-weight: bold;} 
+
+        .customer-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; margin-bottom: 10px; }
         .grid-item { display: contents; }
         .grid-item label { white-space: nowrap; font-weight: bold; text-align: left; }
+
+        /* --- INPUT STYLES --- */
+        .bill-container input[type="text"], .bill-container input[type="date"], .bill-container input[type="number"] { 
+            border: none; background-image: linear-gradient(to right, #888 30%, rgba(255, 255, 255, 0) 0%);
+            background-position: 0% 100%; background-size: 3px 1px; background-repeat: repeat-x; 
+            font-family: 'Niramit'; font-size: 11px; width: 100%; box-sizing: border-box; 
+            background-color: transparent !important; height: 22px; line-height: 22px;
+            padding: 0 5px !important; margin: 0 !important; vertical-align: bottom;
+            appearance: none; -webkit-appearance: none; box-shadow: none;
+        }
+        .bill-container input:focus { outline: none; background-image: linear-gradient(to right, #000 100%, #000 0%); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* --- TABLE STYLING --- */
+        .items-table { 
+            width: 100%; margin-top: 5px; 
+            border-spacing: 0; border-collapse: collapse; 
+            border: 0.3px solid #444; 
+            table-layout: fixed; 
+        }
+        .items-table th, .items-table td { 
+            border: 0.3px solid #444;
+            padding: 0 !important; 
+            height: 28px; vertical-align: middle; line-height: normal; 
+        }
+        .items-table th { background-color: #f2f2f2; font-weight: bold; font-size: 11px; }
+
+        /* --- ALIGNMENT --- */
+        .items-table th.col-desc, .items-table td.col-desc input { text-align: left; padding-left: 5px !important; }
+        .items-table th.col-qty, .items-table td.col-qty input { text-align: right; padding-right: 5px !important; }
+        .items-table th.col-price, .items-table td.col-price input { text-align: right; padding-right: 5px !important; }
+        .items-table th.col-amount, .items-table td.col-amount input, .items-table td.col-amount span { text-align: right; padding-right: 5px !important; }
         
-        input[type="text"], input[type="date"], input[type="number"] { border: none; border-bottom: 1px dotted #888; padding: 2px 0; font-family: 'Sarabun'; font-size: 12px; width: 100%; box-sizing: border-box; background: transparent; }
-        input:focus { outline: none; border-bottom: 1px solid #000; }
-        
-        .items-table { width: 100%; margin-top: 5px; border-spacing: 0; border-top: 1px solid #000; border-left: 1px solid #000; }
-        .items-table th, .items-table td { border: none; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; }
-        .items-table input { text-align: inherit; width: 100%; padding: 0; border: none !important; background: transparent; outline: none; }
-        
-        .pdf-render .company-stamp-area { border-width: 0.5px !important; }
-        .pdf-render .items-table { border-top-width: 0.5px !important; border-left-width: 0.5px !important; }
-        .pdf-render .items-table th, .pdf-render .items-table td { border-bottom-width: 0.5px !important; border-right-width: 0.5px !important; }
-        
-        .items-table thead { background-color: #f2f2f2; }
-        .items-table .col-desc { width: 55%; text-align: left; }
-        .items-table .col-qty, .items-table .col-price, .items-table .col-amount { width: 15%; text-align: right; }
+        .items-table input { height: 100%; font-size: 11px !important; background-image: none !important; padding-top: 4px !important; display: block; width: 100%; }
+        .items-table .col-amount span { display: block; line-height: 28px; }
+
+        /* --- FOOTER ALIGNMENT --- */
         .items-table tfoot tr { background-color: #f2f2f2; font-weight: bold; }
-        
+        #totalInWords { text-align: center; font-weight: bold; }
+        .footer-label {
+    text-align: center !important;
+    font-weight: bold;
+}
+        #grand-total { text-align: right; padding-right: 5px !important; }
+
         .signature-section { margin-top: auto; padding-top: 10px; display: flex; justify-content: space-around; }
-        .signature-box { text-align: center; width: 40%; padding-top: 30px; border-top: 1px dotted #888; }
-        .printing input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
-    </style>
+        .signature-box { text-align: center; width: 40%; margin-top: 20px; padding-top: 5px; border-top: 1px dotted #000; }
+    
+.items-table tfoot td {
+    height: 28px !important;
+    vertical-align: middle !important;
+    font-size: 11px;
+}
+.footer-label {
+    text-align: center !important;
+    font-weight: bold;
+}
+
+</style>
 </head>
 <body>
 
@@ -127,7 +152,6 @@
                 <option value="odf">Ondemand Factory</option>
             </select>
         </div>
-        
         <div class="control-group-right">
             <button id="btn-clear" onclick="clearForm()">ล้างฟอร์ม</button>
             <button id="btn-save-export" onclick="saveAndExport()">บันทึก & Export PDF</button>
@@ -135,7 +159,6 @@
     </div>
 
     <div class="bill-container" id="invoice">
-        <!-- (เนื้อหาบิลเหมือนเดิม) -->
         <div class="info-wrapper">
             <header class="bill-header">
                 <div class="company-stamp-area">
@@ -147,8 +170,9 @@
                 <div class="bill-title-section">
                     <h2>บิลเงินสด</h2>
                     <div style="font-weight: bold; margin-bottom: 5px;">CASH SALE</div>
-                    <div class="bill-info"><label>เล่มที่:</label><input type="text" id="bookNo" style="width: 60px; text-align:center;" onblur="formatPads(this, 2)"></div>
-                    <div class="bill-info"><label>เลขที่:</label><input type="text" id="invoiceNo" style="width: 60px; text-align:center;" onblur="formatPads(this, 4)"></div>
+                    <div class="bill-info"><label>เล่มที่:</label><input type="text" id="bookNo" style="width: 70px; text-align:center;" onblur="formatPads(this, 2)"></div>
+                    <div class="bill-info"><label>เลขที่:</label><input type="text" id="invoiceNo" style="width: 70px; text-align:center;" onblur="formatPads(this, 4)"></div>
+                    <div class="bill-info"><label>เลขที่อ้างอิง:</label><input type="text" id="refNo" style="width: 70px; text-align:center;"></div>
                 </div>
             </header>
 
@@ -164,6 +188,12 @@
         </div>
 
         <table class="items-table">
+            <colgroup>
+                <col style="width: 55%;"> <!-- Description -->
+                <col style="width: 15%;"> <!-- Qty -->
+                <col style="width: 15%;"> <!-- Price -->
+                <col style="width: 15%;"> <!-- Amount -->
+            </colgroup>
             <thead>
                 <tr>
                     <th class="col-desc">รายการ / DESCRIPTION</th>
@@ -175,230 +205,134 @@
             <tbody id="invoice-items"></tbody>
             <tfoot>
                 <tr>
-                    <td id="totalInWords" colspan="2" style="text-align: center;">-</td>
-                    <td style="text-align: right;">รวมเงิน</td>
-                    <td id="grand-total" class="total-amount-cell">0.00</td>
+                    <td id="totalInWords" colspan="2">-</td>
+                    <td class="footer-label">รวมเงิน</td>
+                    <td id="grand-total">0.00</td>
                 </tr>
             </tfoot>
         </table>
 
-        <section class="signature-section">
+        <!-- [REFINEMENT] Using <footer> for better semantic HTML structure -->
+        <footer class="signature-section">
             <div class="signature-box">ผู้รับเงิน / COLLECTOR</div>
             <div class="signature-box">วันที่รับเงิน</div>
-        </section>
+        </footer>
     </div>
 
     <script>
         window.jsPDF = window.jspdf.jsPDF;
-        
-        // *************************************************************************
-        // ตรวจสอบ URL นี้ให้ดีว่าตรงกับที่ Deploy "ล่าสุด" และสิทธิ์เป็น "Anyone"
-        // *************************************************************************
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4-mbK3asRBJ3EiZJx3VrAIEhSxJbn89U-BDCdaUj4cl0Pr40qxahNiVq4gW8JCl0hqw/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd7A3wZFM9PW8qJv9YeUfWtadJsyXHXCyVIW3Ftg3DSJ2jJQ5W2Zm1oiix__XuAVwIsA/exec'; 
 
         const companyData = {
             'tr': { name: 'ห้างหุ้นส่วนจำกัด ทีอาร์ คิดส์ช็อป (สำนักงานใหญ่)', address: '1641,1643 ชั้นที่ 3 ถนนเพชรเกษม แขวงหลักสอง<br>เขตบางแค กรุงเทพมหานคร 10160', taxId: 'เลขประจำตัวผู้เสียภาษี: 0103563005345', phone: 'เบอร์โทร: 0829341288' },
             'odf': { name: 'บริษัท ออนดีมานด์ แฟคตอรี่ จำกัด', address: '1641,1643 ถนนเพชรเกษม แขวงหลักสอง<br>เขตบางแค กรุงเทพมหานคร 10160', taxId: 'เลขประจำตัวผู้เสียภาษี: 0105564109286', phone: 'เบอร์โทร: 0829341288' }
         };
 
-        document.addEventListener('DOMContentLoaded', function () {
-            clearForm(); 
-        });
-
-        // --------------------------------------------------------
-        // ฟังก์ชันค้นหาแบบ Debug (ถ้าพัง จะแจ้งข้อความ Error จริงๆ)
-        // --------------------------------------------------------
-        function searchInvoice() {
-            const query = document.getElementById('search-input').value.trim();
-            if (!query) return alert("กรุณากรอกเลขที่บิล");
-
-            const btn = document.getElementById('btn-search');
-            btn.innerText = '...';
-            btn.disabled = true;
-
-            fetch(`${GOOGLE_SCRIPT_URL}?action=search&q=${encodeURIComponent(query)}`)
-            .then(res => res.text()) // อ่านเป็น Text ก่อนเผื่อไม่ใช่ JSON
-            .then(text => {
-                btn.innerText = 'ค้นหา';
-                btn.disabled = false;
-                
-                try {
-                    const data = JSON.parse(text); // ลองแปลงเป็น JSON
-                    if (data.error) {
-                        alert("เกิดข้อผิดพลาดจาก Server:\n" + data.error);
-                    } else if (data.found) {
-                        fillFormWithData(data);
-                    } else {
-                        alert('ไม่พบข้อมูลบิลเลขที่: ' + query + '\n(ตรวจสอบเลขที่บิลให้ถูกต้อง)');
-                    }
-                } catch (e) {
-                    // ถ้าแปลง JSON ไม่ได้ แสดงว่า Server ส่ง HTML Error มา
-                    console.error("Server Response:", text);
-                    alert("เชื่อมต่อไม่ได้ (Server Error):\n" + text.substring(0, 150) + "\n...\n(ลองเช็ค URL หรือสิทธิ์การเข้าถึง)");
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                btn.innerText = 'ค้นหา';
-                btn.disabled = false;
-                alert('เกิดข้อผิดพลาดทางเครือข่าย (Network Error)');
-            });
-        }
-
-        // --------------------------------------------------------
-        // ฟังก์ชันลบบิล
-        // --------------------------------------------------------
-        function deleteInvoice() {
-            const query = document.getElementById('search-input').value.trim();
-            if (!query) return alert("กรุณาระบุเลขที่บิลที่ต้องการลบ");
-            
-            if (!confirm("⚠️ ยืนยันการลบบิลเลขที่ " + query + " ?")) {
-                return;
-            }
-
-            const btn = document.getElementById('btn-delete');
-            btn.innerText = 'กำลังลบ...';
-            btn.disabled = true;
-
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', billNo: query })
-            })
-            .then(() => {
-                alert('ส่งคำขอลบแล้ว กรุณากดค้นหาเพื่อตรวจสอบว่าบิลหายไปหรือยัง');
-                btn.innerText = 'ลบบิล';
-                btn.disabled = false;
-                clearForm();
-            })
-            .catch(err => {
-                console.error(err);
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-                btn.innerText = 'ลบบิล';
-                btn.disabled = false;
-            });
-        }
+        document.addEventListener('DOMContentLoaded', function () { clearForm(); });
+        document.getElementById('company-selector').addEventListener('change', function() { updateCompanyInfo(this.value); fetchLatestBillNo(); });
+        document.getElementById('bookNo').addEventListener('change', function() { formatPads(this, 2); });
+        document.getElementById('invoiceNo').addEventListener('change', function() { formatPads(this, 4); });
 
         function fetchLatestBillNo() {
-            document.getElementById('bookNo').value = '..';
-            document.getElementById('invoiceNo').value = '....';
+            const selectedCompany = document.getElementById('company-selector').value;
+            document.getElementById('bookNo').value = '..'; document.getElementById('invoiceNo').value = '....';
+            fetch(`${GOOGLE_SCRIPT_URL}?action=getLatest&company=${selectedCompany}`)
+            .then(res => res.json()).then(data => { if(!data.error) calculateNextBill(data.book, data.invoice); })
+            .catch(() => { document.getElementById('bookNo').value='01'; document.getElementById('invoiceNo').value='0001'; });
+        }
+        function calculateNextBill(b, i) {
+            b = parseInt(b)||1; i = parseInt(i)||0;
+            let nB = b, nI = i+1; if(nI >= 15) { nB++; nI=1; }
+            document.getElementById('bookNo').value = nB.toString().padStart(2,'0');
+            document.getElementById('invoiceNo').value = nI.toString().padStart(4,'0');
+        }
 
-            fetch(`${GOOGLE_SCRIPT_URL}?action=getLatest`)
-            .then(res => res.json())
-            .then(data => {
-                if(data.error) {
-                    console.error("Server Error:", data.error);
+        // --- Search with Animation ---
+        function searchInvoice() {
+            const q = document.getElementById('search-input').value.trim();
+            if(!q) return alert("กรุณาระบุเลขที่บิลที่ต้องการค้นหา");
+            
+            const btn = document.getElementById('btn-search');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span> ค้นหา...';
+            btn.disabled = true;
+
+            fetch(`${GOOGLE_SCRIPT_URL}?action=search&q=${encodeURIComponent(q)}`)
+            .then(res=>res.json())
+            .then(data=>{ 
+                if(data.found) {
+                    fillFormWithData(data); 
                 } else {
-                    calculateNextBill(data.book, data.invoice);
+                    alert('ไม่พบบิลตามเลขที่ที่ระบุ'); 
                 }
             })
-            .catch(err => {
-                console.error("Error:", err);
-                document.getElementById('bookNo').value = '01';
-                document.getElementById('invoiceNo').value = '0001';
+            .catch(err => alert("เกิดข้อผิดพลาดในการค้นหา: " + err))
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             });
         }
 
-        function calculateNextBill(lastBook, lastInvoice) {
-            lastBook = parseInt(lastBook) || 1;
-            lastInvoice = parseInt(lastInvoice) || 0;
+        function deleteInvoice() {
+            const q = document.getElementById('search-input').value.trim();
+            // [REFINEMENT] Improved user confirmation messages
+            if(!q) return alert("กรุณาระบุเลขที่บิลที่ต้องการลบในช่องค้นหา");
+            if(!confirm(`ยืนยันการลบบิลเลขที่ "${q}" ใช่หรือไม่?`)) return;
 
-            let nextBook = lastBook;
-            let nextInvoice = lastInvoice + 1;
-
-            if (nextInvoice > 25) {
-                nextBook++;
-                nextInvoice = 1;
-            }
-
-            document.getElementById('bookNo').value = nextBook.toString().padStart(2, '0');
-            document.getElementById('invoiceNo').value = nextInvoice.toString().padStart(4, '0');
-        }
-
-        function formatPads(input, length) {
-            if(input.value) {
-                input.value = input.value.toString().padStart(length, '0');
-            }
+            fetch(GOOGLE_SCRIPT_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',billNo:q})})
+            .then(()=> { 
+                alert(`บิลเลขที่ ${q} ถูกลบแล้ว`);
+                clearForm();
+            })
+            .catch(err => alert("เกิดข้อผิดพลาดในการลบ: " + err));
         }
 
         function fillFormWithData(data) {
-            const billParts = data.billNo.split('/');
-            if (billParts.length === 2) {
-                document.getElementById('bookNo').value = billParts[0];
-                document.getElementById('invoiceNo').value = billParts[1];
-            } else {
-                document.getElementById('invoiceNo').value = data.billNo;
-            }
-
-            const select = document.getElementById('company-selector');
-            for(let i=0; i<select.options.length; i++) {
-                if(select.options[i].text === data.company) {
-                    select.selectedIndex = i;
-                    updateCompanyInfo(select.value);
-                    break;
-                }
-            }
-
-            const dateObj = new Date(data.date);
-            if (!isNaN(dateObj)) {
-                const dateStr = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0');
-                document.getElementById('invoiceDate').value = dateStr;
-            }
-            
+            const parts = data.billNo.split('/');
+            if(parts.length===2){document.getElementById('bookNo').value=parts[0];document.getElementById('invoiceNo').value=parts[1];}
+            const sel = document.getElementById('company-selector');
+            for(let i=0; i<sel.options.length; i++) if(sel.options[i].text===data.company) { sel.selectedIndex=i; updateCompanyInfo(sel.value); break; }
+            if(data.date) document.getElementById('invoiceDate').value = new Date(data.date).toISOString().split('T')[0];
             document.getElementById('customerName').value = data.customer;
             document.getElementById('taxId').value = data.taxId;
-            document.getElementById('customerAddress1').value = ""; 
-
-            const tbody = document.getElementById('invoice-items');
-            tbody.innerHTML = '';
-
-            let items = [];
-            if (data.itemsJson) {
-                try {
-                    items = JSON.parse(data.itemsJson);
-                } catch(e) { items = []; }
-            }
+            document.getElementById('refNo').value = data.refNo || '';
             
-            items.forEach(item => {
-                addSpecificItem(item.desc, item.qty, item.price);
-            });
-
-            for(let i=items.length; i<10; i++) addItem();
+            document.getElementById('invoice-items').innerHTML = '';
+            let items=[]; try{items=JSON.parse(data.itemsJson);}catch(e){}
+            items.forEach(it=>addSpecificItem(it.desc,it.qty,it.price));
+            for(let i=items.length; i<12; i++) addItem();
             updateTotals();
         }
 
         function addSpecificItem(desc, qty, price) {
-            const itemRow = document.createElement('tr');
-            itemRow.innerHTML = `
-                <td class="col-desc"><input type="text" class="desc-input" value="${desc}"></td>
-                <td class="col-qty"><input type="number" class="quantity" value="${qty}"></td>
-                <td class="col-price"><input type="number" class="price" step="0.01" value="${price}"></td>
-                <td class="col-amount"><span class="line-total">${(qty*price).toFixed(2)}</span></td>
-            `;
-            document.getElementById('invoice-items').appendChild(itemRow);
+            const tr = document.createElement('tr');
+            const qV = (qty>0)?qty:''; const pV = (price>0)?parseFloat(price).toFixed(2):''; const tV = (qty*price)>0?(qty*price).toFixed(2):'';
+            tr.innerHTML = `<td class="col-desc"><input type="text" class="desc-input" value="${desc}"></td>
+                            <td class="col-qty"><input type="number" class="quantity" value="${qV}"></td>
+                            <td class="col-price"><input type="number" class="price" step="0.01" value="${pV}"></td>
+                            <td class="col-amount"><span class="line-total">${tV}</span></td>`;
+            document.getElementById('invoice-items').appendChild(tr);
+        }
+
+        function addItem() {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="col-desc"><input type="text" class="desc-input"></td>
+                            <td class="col-qty"><input type="number" class="quantity"></td>
+                            <td class="col-price"><input type="number" class="price" step="0.01"></td>
+                            <td class="col-amount"><span class="line-total"></span></td>`;
+            document.getElementById('invoice-items').appendChild(tr);
         }
 
         function saveAndExport() {
-            formatPads(document.getElementById('bookNo'), 2);
-            formatPads(document.getElementById('invoiceNo'), 4);
-
-            const btn = document.getElementById('btn-save-export');
-            const originalText = btn.innerText;
-            btn.innerText = 'กำลังบันทึก...';
+            formatPads(document.getElementById('bookNo'), 2); formatPads(document.getElementById('invoiceNo'), 4);
+            const btn = document.getElementById('btn-save-export'); const txt = btn.innerText; 
+            btn.innerHTML = '<span class="spinner"></span> กำลังบันทึก...'; 
             btn.disabled = true;
-
-            let itemsArray = [];
-            let itemsStringList = [];
             
-            document.querySelectorAll('#invoice-items tr').forEach(row => {
-                const desc = row.querySelector('.desc-input').value;
-                const qty = row.querySelector('.quantity').value;
-                const price = row.querySelector('.price').value;
-                if(desc && qty) {
-                    itemsStringList.push(`${desc} (${qty}x${price})`);
-                    itemsArray.push({ desc: desc, qty: qty, price: price });
-                }
+            let arr=[], list=[];
+            document.querySelectorAll('#invoice-items tr').forEach(r => {
+                const d=r.querySelector('.desc-input').value, q=r.querySelector('.quantity').value, p=r.querySelector('.price').value;
+                if(d){ arr.push({desc:d, qty:q||0, price:p||0}); list.push(`${d} (${q}x${p})`); }
             });
 
             const payload = {
@@ -408,141 +342,102 @@
                 billNo: `${document.getElementById('bookNo').value}/${document.getElementById('invoiceNo').value}`,
                 customer: document.getElementById('customerName').value,
                 taxId: document.getElementById('taxId').value,
-                items: itemsStringList.join(', '),
-                itemsJson: JSON.stringify(itemsArray),
+                refNo: document.getElementById('refNo').value,
+                items: list.join(', '), itemsJson: JSON.stringify(arr),
                 total: document.getElementById('grand-total').textContent
             };
 
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
+            fetch(GOOGLE_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})
             .then(() => {
-                btn.innerText = 'สร้าง PDF...';
-                setTimeout(() => {
-                    generatePDF(payload.billNo);
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                    fetchLatestBillNo();
-                }, 1000);
+                btn.innerText = 'กำลังสร้าง PDF...';
+                setTimeout(() => { generatePDF(payload.billNo, () => { clearForm(true); btn.innerText = txt; btn.disabled = false; }); }, 500);
             })
-            .catch(err => {
-                alert('เกิดข้อผิดพลาดในการบันทึก: ' + err);
-                btn.innerText = originalText;
-                btn.disabled = false;
-            });
+            .catch(err => { alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err); btn.innerText=txt; btn.disabled=false; });
         }
 
-        function generatePDF(filename) {
-            const invoiceElement = document.getElementById('invoice');
-            invoiceElement.classList.add('printing');
-            invoiceElement.classList.add('pdf-render');
+        function generatePDF(filename, callback) {
+    const element = document.getElementById("invoice");
 
-            html2canvas(invoiceElement, { scale: 3, useCORS: true }).then(canvas => {
-                invoiceElement.classList.remove('printing');
-                invoiceElement.classList.remove('pdf-render');
+    const opt = {
+        margin: [0,0,0,0],
+        filename: `บิลเงินสด-${filename.replace(/\//g,'-')}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { 
+            scale: 3, 
+            useCORS: true,
+            scrollY: 0,
+            windowHeight: document.body.scrollHeight
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: [148,210], 
+            orientation: 'portrait' 
+        }
+    };
 
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`บิลเงินสด-${filename.replace(/\//g,'-')}.pdf`);
-            });
+    html2pdf().set(opt).from(element).save().then(() => {
+        if (callback) callback();
+    });
+}
+
+        function clearForm(skipAnimation = false) {
+            if (skipAnimation) { performClear(); return; }
+            const btn = document.getElementById('btn-clear');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner spinner-dark"></span> กำลังล้าง...';
+            btn.disabled = true;
+            setTimeout(() => { performClear(); btn.innerHTML = originalText; btn.disabled = false; }, 500);
         }
 
-        function clearForm() {
+        function performClear() {
             document.getElementById('invoiceDate').valueAsDate = new Date();
-            const savedCompany = localStorage.getItem('selected_company') || 'tr';
-            document.getElementById('company-selector').value = savedCompany;
-            updateCompanyInfo(savedCompany);
-            
-            document.getElementById('customerName').value = '';
-            document.getElementById('customerAddress1').value = '';
-            document.getElementById('customerAddress2').value = '';
-            document.getElementById('taxId').value = '';
-            
+            const saved = localStorage.getItem('selected_company') || 'tr';
+            document.getElementById('company-selector').value = saved; updateCompanyInfo(saved);
+            ['customerName','customerAddress1','customerAddress2','taxId','refNo','search-input'].forEach(id=>document.getElementById(id).value='');
             document.getElementById('invoice-items').innerHTML = '';
-            for(let i=0; i<10; i++) addItem();
-            updateTotals();
-
-            fetchLatestBillNo();
+            for(let i=0; i<12; i++) addItem();
+            updateTotals(); fetchLatestBillNo();
         }
-
-        document.getElementById('company-selector').addEventListener('change', function() { updateCompanyInfo(this.value); });
-        
-        document.getElementById('bookNo').addEventListener('change', function() { formatPads(this, 2); });
-        document.getElementById('invoiceNo').addEventListener('change', function() { formatPads(this, 4); });
 
         function updateCompanyInfo(key) {
-            const data = companyData[key];
-            if (data) {
-                document.getElementById('company-name').innerHTML = data.name;
-                document.getElementById('company-address').innerHTML = data.address;
-                document.getElementById('company-tax-id').innerHTML = data.taxId;
-                document.getElementById('company-phone').innerHTML = data.phone;
+            const d = companyData[key];
+            if(d) {
+                document.getElementById('company-name').innerHTML=d.name; document.getElementById('company-address').innerHTML=d.address;
+                document.getElementById('company-tax-id').innerHTML=d.taxId; document.getElementById('company-phone').innerHTML=d.phone;
                 localStorage.setItem('selected_company', key);
             }
         }
-
-        function addItem() {
-            const itemRow = document.createElement('tr');
-            itemRow.innerHTML = `<td class="col-desc"><input type="text" class="desc-input"></td><td class="col-qty"><input type="number" class="quantity"></td><td class="col-price"><input type="number" class="price" step="0.01"></td><td class="col-amount"><span class="line-total"></span></td>`;
-            document.getElementById('invoice-items').appendChild(itemRow);
-        }
+        function formatPads(inp, len) { if(inp.value) inp.value = inp.value.toString().padStart(len, '0'); }
 
         document.getElementById('invoice-items').addEventListener('input', function(e) {
             const row = e.target.closest('tr');
-            if (row) {
-                const q = parseFloat(row.querySelector('.quantity').value) || 0;
-                const p = parseFloat(row.querySelector('.price').value) || 0;
-                const t = q * p;
-                row.querySelector('.line-total').textContent = t !== 0 ? t.toFixed(2) : '';
+            if(row) {
+                const q=parseFloat(row.querySelector('.quantity').value)||0; 
+                const p=parseFloat(row.querySelector('.price').value)||0;
+                row.querySelector('.line-total').textContent = (q*p)!==0?(q*p).toFixed(2):'';
                 updateTotals();
             }
         });
-
-        document.getElementById('invoice-items').addEventListener('blur', function(e) {
-            if (e.target.classList.contains('price') && e.target.value) {
-                e.target.value = parseFloat(e.target.value).toFixed(2);
+        document.getElementById('invoice-items').addEventListener('blur', function(e){
+            if(e.target.classList.contains('price') && e.target.value){
+                if(parseFloat(e.target.value)===0) e.target.value=''; else e.target.value=parseFloat(e.target.value).toFixed(2);
             }
         }, true);
 
         function updateTotals() {
-            let total = 0;
-            document.querySelectorAll('.line-total').forEach(l => total += parseFloat(l.textContent) || 0);
-            document.getElementById('grand-total').textContent = total !== 0 ? total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : '0.00';
-            document.getElementById('totalInWords').textContent = bahtText(total);
+            let t=0; document.querySelectorAll('.line-total').forEach(l=>t+=parseFloat(l.textContent)||0);
+            document.getElementById('grand-total').textContent = t!==0?t.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'0.00';
+            document.getElementById('totalInWords').textContent = bahtText(t);
         }
-
         function bahtText(num) {
-            num = Number(num);
-            if (isNaN(num) || num <= 0) return '-';
-            let numStr = num.toFixed(2).toString().replace('.', ',');
-            let [intPart, decPart] = numStr.split(',');
-            let intText = convert(intPart), decText = convert(decPart);
-            let result = intText ? intText + 'บาท' : '';
-            result += (decPart === '00' || !decText) ? 'ถ้วน' : decText + 'สตางค์';
-            return result;
+            num=Number(num); if(isNaN(num)||num<=0) return '-';
+            let s=num.toFixed(2).replace('.',','), [i,d]=s.split(',');
+            let t=convert(i); return t?(t+'บาท'+(d==='00'?'ถ้วน':convert(d)+'สตางค์')):'';
         }
-
         function convert(s) {
-            const n = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า', 'สิบ'];
-            const d = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'];
-            let out = '', len = s.length;
-            for(let i=0; i<len; i++) {
-                let digit = parseInt(s[i]), pos = len-i-1;
-                if(digit>0) {
-                    if(pos===1 && digit===1) out+='สิบ';
-                    else if(pos===1 && digit===2) out+='ยี่สิบ';
-                    else if(pos===0 && digit===1 && len>1 && s[len-2]!=='0') out+='เอ็ด';
-                    else out += n[digit] + d[pos];
-                }
-            }
-            return out;
+            const n=['','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า','สิบ'], d=['','สิบ','ร้อย','พัน','หมื่น','แสน','ล้าน'];
+            let o='', l=s.length;
+            for(let i=0;i<l;i++){ let v=parseInt(s[i]), p=l-i-1; if(v>0){ if(p===1&&v===1)o+='สิบ'; else if(p===1&&v===2)o+='ยี่สิบ'; else if(p===0&&v===1&&l>1&&s[l-2]!=='0')o+='เอ็ด'; else o+=n[v]+d[p]; } } return o;
         }
     </script>
 </body>
