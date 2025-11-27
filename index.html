@@ -221,7 +221,7 @@
 
     <script>
         window.jsPDF = window.jspdf.jsPDF;
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd7A3wZFM9PW8qJv9YeUfWtadJsyXHXCyVIW3Ftg3DSJ2jJQ5W2Zm1oiix__XuAVwIsA/exec'; 
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_A_lTwl9_fXsLcP8rfGnEDz1bkY9A7KxRYc9wxEybbvNu1kzPR52c1JzFF6IKOHZYWg/exec'; 
 
         const companyData = {
             'tr': { name: 'ห้างหุ้นส่วนจำกัด ทีอาร์ คิดส์ช็อป (สำนักงานใหญ่)', address: '1641,1643 ชั้นที่ 3 ถนนเพชรเกษม แขวงหลักสอง<br>เขตบางแค กรุงเทพมหานคร 10160', taxId: 'เลขประจำตัวผู้เสียภาษี: 0103563005345', phone: 'เบอร์โทร: 0829341288' },
@@ -235,12 +235,52 @@
 
         function fetchLatestBillNo() {
             const selectedCompany = document.getElementById('company-selector').value;
-            document.getElementById('bookNo').value = '..'; document.getElementById('invoiceNo').value = '....';
+            document.getElementById('bookNo').value = '..';
+            document.getElementById('invoiceNo').value = '....';
+
             fetch(`${GOOGLE_SCRIPT_URL}?action=getLatest&company=${selectedCompany}`)
-            .then(res => res.json()).then(data => { if(!data.error) calculateNextBill(data.book, data.invoice); })
-            .catch(() => { document.getElementById('bookNo').value='01'; document.getElementById('invoiceNo').value='0001'; });
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.error) calculateNextBill(data);
+                })
+                .catch(() => {
+                    document.getElementById('bookNo').value = '01';
+                    document.getElementById('invoiceNo').value = '0001';
+                });
         }
-        function calculateNextBill(b, i) {
+
+        
+        function calculateNextBill(data) {
+            const company = document.getElementById('company-selector').value;
+
+            let book = 1, invoice = 0;
+
+            if (company === 'tr') {
+                book = parseInt(data.book_tr) || 1;
+                invoice = parseInt(data.invoice_tr) || 0;
+            } else {
+                book = parseInt(data.book_odf) || 1;
+                invoice = parseInt(data.invoice_odf) || 0;
+            }
+
+            const maxBook = parseInt(data.maxBook) || 1;
+
+            // นับต่อแยกแต่ละบริษัทก่อน
+            let nextInv = invoice + 1;
+            let nextBook = book;
+
+            // ถ้าบริษัทนี้ครบ 15 ใบ → ค่อยเช็คเล่มสูงสุดของทุกบริษัท แล้ว +1
+            if (nextInv > 15) {
+                nextBook = maxBook + 1;
+                nextInv = 1;
+            }
+
+            document.getElementById('bookNo').value = String(nextBook).padStart(2, '0');
+            document.getElementById('invoiceNo').value = String(nextInv).padStart(4, '0');
+        }
+
+
+        function calculateNextBill_old(b, i) {
             b = parseInt(b)||1; i = parseInt(i)||0;
             let nB = b, nI = i+1; if(nI >= 15) { nB++; nI=1; }
             document.getElementById('bookNo').value = nB.toString().padStart(2,'0');
